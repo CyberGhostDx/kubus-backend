@@ -33,19 +33,22 @@ const mqttInit = () => {
 
   mqttClient.on("message", (topic, message) => {
     if (topic == mqttTopicPrefix + busTopic) {
-      let msg = message.toString().split(",");
+      let msg = message
+        .toString()
+        .replace(/(\r\n|\n|\r)/gm, "")
+        .split(",");
       if (msg.length < 4) return;
       for (const data of msg) {
         if (Number.isNaN(+data)) return;
       }
       let data = msg.map(Number);
       const busData: BusData = {
-        id: data[0],
+        id: 1,
         lat: data[1],
         lng: data[2],
         kmh: data[3],
       };
-      if (busData.id < 1) return;
+      if (busData.id < 1 || busData.lat == 0 || busData.lng == 0) return;
       handleBus(busData);
       handleCheckpoint(busData);
     }
@@ -68,16 +71,17 @@ const handleCheckpoint = async (busData: BusData) => {
     haversine([busData.lat, busData.lng], [nextBusStop.lat, nextBusStop.lng]) *
     1000;
   const estimate = Math.round((distance / 1000 / kmh) * 60);
+  console.log((distance / 1000 / kmh) * 60);
   let data = {
     currentCheckpoint: checkpoint,
     nextCheckpoint: (nextCheckpoint + 1) % 23,
     estimate,
   };
-  if (distance > 100) {
-    // server?.publish(
-    //   "checkpoint",
-    //   JSON.stringify({ topic: "checkpoint", payload: data }),
-    // );
+  if (distance > 30) {
+    server?.publish(
+      "checkpoint",
+      JSON.stringify({ topic: "checkpoint", payload: data }),
+    );
   } else {
     data["currentCheckpoint"] += 1;
     data["nextCheckpoint"] += 1;

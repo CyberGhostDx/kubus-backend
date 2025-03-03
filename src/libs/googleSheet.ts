@@ -59,7 +59,9 @@ const setBusStatus = async ({ id, lat, lng, kmh }: BusData) => {
   const busKmh = sheet.getCellByA1(`C${cellID}`);
   busCoor.value = `${lat},${lng}`;
   busKmh.value = kmh;
-  await sheet.saveUpdatedCells();
+  await sheet
+    .saveUpdatedCells()
+    .catch((err) => console.log(`Error Status ${err.status}`));
 };
 
 const getBusCheckpoint = async (): Promise<number> => {
@@ -78,7 +80,9 @@ const setBusCheckpoint = async (id: number) => {
       sheet.getCellByA1(`E${i}`).boolValue = false;
     }
     checkpoint.value = 0;
-    await sheet.saveUpdatedCells();
+    await sheet
+      .saveUpdatedCells()
+      .catch((err) => console.log(`Error Status ${err.status}`));
     return;
   }
   for (let i = 2; i <= id + 1; i++) {
@@ -88,7 +92,9 @@ const setBusCheckpoint = async (id: number) => {
     sheet.getCellByA1(`E${i}`).boolValue = false;
   }
   checkpoint.value = id;
-  await sheet.saveUpdatedCells();
+  await sheet
+    .saveUpdatedCells()
+    .catch((err) => console.log(`Error Status ${err.status}`));
 };
 
 export {
