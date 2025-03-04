@@ -65,13 +65,12 @@ const handleBus = (busData: BusData) => {
 const handleCheckpoint = async (busData: BusData) => {
   const checkpoint = await getBusCheckpoint();
   const kmh = busData.kmh;
-  const nextCheckpoint = checkpoint % 23;
-  const nextBusStop = busStops[nextCheckpoint];
-  const distance =
+  let nextCheckpoint = checkpoint % 23;
+  let nextBusStop = busStops[nextCheckpoint];
+  let distance =
     haversine([busData.lat, busData.lng], [nextBusStop.lat, nextBusStop.lng]) *
     1000;
-  const estimate = Math.round((distance / 1000 / kmh) * 60);
-  console.log((distance / 1000 / kmh) * 60);
+  let estimate = Math.round((distance / 1000 / kmh) * 60);
   let data = {
     currentCheckpoint: checkpoint,
     nextCheckpoint: (nextCheckpoint + 1) % 23,
@@ -80,12 +79,20 @@ const handleCheckpoint = async (busData: BusData) => {
   if (distance > 30) {
     server?.publish(
       "checkpoint",
-      JSON.stringify({ topic: "checkpoint", payload: data }),
+      JSON.stringify({ topic: "estimate", payload: estimate }),
     );
   } else {
     data["currentCheckpoint"] += 1;
     data["nextCheckpoint"] += 1;
     data["nextCheckpoint"] %= 23;
+    nextBusStop = busStops[data["nextCheckpoint"]];
+    distance =
+      haversine(
+        [busData.lat, busData.lng],
+        [nextBusStop.lat, nextBusStop.lng],
+      ) * 1000;
+    estimate = Math.round((distance / 1000 / kmh) * 60);
+    data["estimate"] = estimate;
     server?.publish(
       "checkpoint",
       JSON.stringify({ topic: "checkpoint", payload: data }),
