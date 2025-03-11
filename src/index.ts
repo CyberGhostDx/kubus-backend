@@ -7,7 +7,7 @@ mqtt();
 
 const app = new Elysia({
   serve: {
-    hostname: "127.0.0.1",
+    hostname: "",
   },
 })
   .get("/", (req) => {
@@ -19,6 +19,7 @@ const app = new Elysia({
       logger.info(`Client id: ${ws.id} Connected`);
       ws.subscribe("bus");
       ws.subscribe("checkpoint");
+      ws.subscribe("estimates");
       const buses = await getBusesStatus();
       const currentCheckpoint = await getBusCheckpoint();
       const checkpoint = {

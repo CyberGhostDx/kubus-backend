@@ -1,7 +1,7 @@
 import haversine from "@/libs/haversine";
 import mqtt from "mqtt";
 import { server, logger } from "./";
-import { BusData } from "@/types";
+import { BusData, BusStop } from "@/types";
 import busStops from "@/libs/busStop";
 import {
   initSpreadSheet,
@@ -99,4 +99,36 @@ const handleCheckpoint = async (busData: BusData) => {
     );
     setBusCheckpoint(nextCheckpoint + 1);
   }
+  handleEstimate(data["nextCheckpoint"], estimate, busData);
+};
+
+const handleEstimate = (
+  nextCheckpoint: number,
+  estimate: number,
+  busData: BusData,
+) => {
+  const numOfBusStop = busStops.length;
+  const estimates: (BusStop & { estimate: number })[] = [];
+  if (nextCheckpoint == 0) return;
+  for (let i = nextCheckpoint; i < numOfBusStop; i++) {
+    const currentBusStop = busStops[i - 1];
+    const nextBusStop = busStops[i];
+    const distance = haversine(
+      [currentBusStop.lat, currentBusStop.lng],
+      [nextBusStop.lat, nextBusStop.lng],
+    );
+    const estimateBetweenStop = Math.round((distance / busData.kmh) * 60);
+    const realEstimate =
+      i == nextCheckpoint
+        ? estimateBetweenStop + estimate
+        : Math.round(
+            (estimateBetweenStop + estimates[i - 1 - nextCheckpoint].estimate) *
+              1.1,
+          );
+    estimates.push({ ...nextBusStop, estimate: realEstimate });
+  }
+  server?.publish(
+    "estimates",
+    JSON.stringify({ topic: "estimates", payload: estimates }),
+  );
 };
